@@ -1,6 +1,6 @@
 from astroML.time_series import multiterm_periodogram
 from scipy.interpolate import UnivariateSpline as interpolate
-import numpy as np        
+import numpy as np
 
 from .base import PeriodicModeler
 
@@ -30,4 +30,14 @@ class LombScargle(PeriodicModeler):
             raise RuntimeError("Need to fit data first.")
         else:
             return self.power_fn(period)
-
+    
+    def period_search(self, pmin=None, pmax=None, resolution=None, **kwargs):
+        """Find the best period for the model"""
+        if pmin is None: 
+            pmin = min(self.periods)
+        if pmax is None:
+            pmax = max(self.periods)
+        if resolution is None:
+            resolution = len(self.periods))
+        return super(LombScargle).period_search(pmin, pmax, 
+                resolution=resolution, **kwargs)
