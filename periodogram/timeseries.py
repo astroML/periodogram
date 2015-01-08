@@ -4,11 +4,13 @@ Base class for time series
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 class TimeSeries(object):
-    def init(self, t, f, df=None, mask=None):
+    def init(self, t, f, df=None, mask=None,
+             band=None):
         """
-        Base clase for time series data
+        Base class for time series data
 
         Parameters
         ----------
@@ -23,22 +25,56 @@ class TimeSeries(object):
             if array, then must be same length as times and fluxes
 
         mask : array_like or None
+
+        band : string or None
+            Passband that data was taken in.
         """
 
         assert(t.shape == f.shape)
 
-        self.t = t
-        self.f = f
+        self._t = t
+        self._f = f
         if df is not None:
             if np.size(df)==1:
                 df = np.ones_like(f) * df
             else:
                 assert(df.shape == f.shape)
-        self.df = df
+        self._df = df
 
         if mask is None:
             mask = np.isnan(f)
-        self.mask = mask
+        self._mask = mask
 
-    
-    
+        self.band = band
+
+        self.models = []
+
+    @property
+    def t(self):
+        return t[~self._mask]
+
+    @property
+    def f(self):
+        return f[~self._mask]
+
+    @property
+    def df(self):
+        return df[~self._mask]
+        
+    def add_perodic_model(self, model, *args, **kwargs):
+        """Connects and fits PeriodicModeler object
+
+        Parameters
+        ----------
+        model: PeriodicModeler, or string
+            PeriodicModeler object or string indicating known PeriodicModel
+
+        args, kwargs passed on to PeriodicModeler
+        """
+        m = model(*args,**kwargs)
+        m.fit(self.t, self.f, self.df)
+
+        self.models.append(m)
+
+    def plot(self, **kwargs):
+        plt.plot(self.t, self.f, **kwargs)
