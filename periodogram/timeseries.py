@@ -78,3 +78,5 @@ class TimeSeries(object):
 
     def plot(self, **kwargs):
         plt.plot(self.t, self.f, **kwargs)
+
+    
