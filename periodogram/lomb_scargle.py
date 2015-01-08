@@ -2,6 +2,8 @@ from astroML.time_series import multiterm_periodogram
 from scipy.interpolate import UnivariateSpline as interpolate
 import numpy as np        
 
+from .base import PeriodicModeler
+
 class LombScargle(PeriodicModeler):
     """Class implementing Lomb-Scargle fitting"""
     def __init__(self, frequencies=None, min_period=None, max_period=None, 
@@ -28,3 +30,4 @@ class LombScargle(PeriodicModeler):
             raise RuntimeError("Need to fit data first.")
         else:
             return self.power_fn(period)
+
