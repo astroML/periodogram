@@ -34,10 +34,10 @@ class LombScargle(PeriodicModeler):
     def period_search(self, pmin=None, pmax=None, resolution=None, **kwargs):
         """Find the best period for the model"""
         if pmin is None: 
-            pmin = min(self.periods)
+            pmin = self.periods.min()
         if pmax is None:
-            pmax = max(self.periods)
+            pmax = self.periods.max()
         if resolution is None:
-            resolution = len(self.periods))
+            resolution = len(self.periods)
         return super(LombScargle).period_search(pmin, pmax, 
                 resolution=resolution, **kwargs)
