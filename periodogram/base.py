@@ -2,6 +2,7 @@
 Base class for models of periodic sources
 """
 
+import numpy as np
 from .findpeaks import peakdetect
 
 class PeriodicModeler(object):
@@ -34,7 +35,8 @@ class PeriodicModeler(object):
                                 resolution)
         
         scores = self.score(periods)
-        maxes,mins = peakdetect(scores, periods)
+        maxes,mins = peakdetect(scores, periods, lookahead=5)
+
         maxes = np.array(maxes)
         inds = np.argsort(maxes[:,1])
         
