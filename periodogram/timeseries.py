@@ -51,15 +51,15 @@ class TimeSeries(object):
 
     @property
     def t(self):
-        return t[~self._mask]
+        return self._t[~self._mask]
 
     @property
     def f(self):
-        return f[~self._mask]
+        return self._f[~self._mask]
 
     @property
     def df(self):
-        return df[~self._mask]
+        return self._df[~self._mask]
         
     def add_perodic_model(self, model, *args, **kwargs):
         """Connects and fits PeriodicModeler object
