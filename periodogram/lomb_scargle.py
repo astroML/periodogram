@@ -6,23 +6,36 @@ from .base import PeriodicModeler
 
 class LombScargle(PeriodicModeler):
     """Class implementing Lomb-Scargle fitting"""
-    def __init__(self, frequencies=None, min_period=None, max_period=None, 
-            num_periods=None):
+    def __init__(self, frequencies=None, pmin=None, pmax=None, 
+            resolution=1000, linspace=False):
+        
         if frequencies is not None:
             self.frequencies = frequencies
             self.periods = 2*np.pi/self.frequencies
         else:
-            self.periods = np.logspace(np.log10(min_period),
-                    np.log_10(max_period), num_periods)
+            if pmin is None or pmax is None or resolution is None:
+                raise ValueError('Must provide either frequencies or min, max, resolution')
+
+            if linspace:
+                self.periods = np.linspace(pmin, pmax, resolution)
+            else:
+                self.periods = np.logspace(np.log10(pmin),
+                                        np.log10(pmax),
+                                        resolution)
             self.frequencies = 2*np.pi/self.periods
         self.power = None
         self.power_fn = None
     
     def fit(self, t, y, dy=None, filts=None):
         """Provide data for the fit"""
+        if dy is None:
+            dy = np.ones_like(y)
+        if np.size(dy)==1:
+            dy = np.ones_like(y)*dy
+        
         self.powers = multiterm_periodogram(t, y, dy, self.frequencies,
-                                            nterms=1)
-        self.power_fn = interpolate(self.periods, self.powers, s=0, k=0)
+                                            n_terms=1)
+        self.power_fn = interpolate(self.periods, self.powers, s=0, k=1)
 
     def score(self, period):
         """Compute the score for a period or array of periods"""
@@ -39,5 +52,5 @@ class LombScargle(PeriodicModeler):
             pmax = self.periods.max()
         if resolution is None:
             resolution = len(self.periods)
-        return super(LombScargle).period_search(pmin, pmax, 
-                resolution=resolution, **kwargs)
+        return super(LombScargle,self).period_search(pmin, pmax, 
+                    resolution=resolution, **kwargs)
