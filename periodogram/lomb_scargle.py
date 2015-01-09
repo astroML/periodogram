@@ -36,6 +36,7 @@ class LombScargle(PeriodicModeler):
         self.powers = multiterm_periodogram(t, y, dy, self.frequencies,
                                             n_terms=1)
         self.power_fn = interpolate(self.periods, self.powers, s=0, k=1)
+        return self
 
     def score(self, period):
         """Compute the score for a period or array of periods"""
