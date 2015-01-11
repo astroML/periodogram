@@ -57,8 +57,10 @@ class ACF(PeriodicModeler):
         
         self.lag = np.arange(maxlag) * self.cadence
 
-        self.power_fn = interpolate(self.ac, self.lag, s=0, k=1)
+        self.power_fn = interpolate(self.lag, self.ac, s=0, k=1)
 
+        return self
+        
     def score(self, period):
         """Compute the score for a period or array of periods"""
         if self.power_fn is None:
