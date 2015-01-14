@@ -6,6 +6,9 @@ Base class for time series
 import numpy as np
 import matplotlib.pyplot as plt
 
+from .lomb_scargle import LombScargle
+from .supersmoother import SuperSmoother
+
 class TimeSeries(object):
     def init(self, t, f, df=None, mask=None,
              band=None):
@@ -61,7 +64,7 @@ class TimeSeries(object):
     def df(self):
         return self._df[~self._mask]
         
-    def add_perodic_model(self, model, *args, **kwargs):
+    def fit_periodic_model(self, model, *args, **kwargs):
         """Connects and fits PeriodicModeler object
 
         Parameters
@@ -71,6 +74,11 @@ class TimeSeries(object):
 
         args, kwargs passed on to PeriodicModeler
         """
+        if model=='supersmoother':
+            model = SuperSmoother(*args,**kwargs)
+        elif model=='lomb-scargle':
+            model = LombScargle(*args,**kwargs)
+        
         m = model(*args,**kwargs)
         m.fit(self.t, self.f, self.df)
 
