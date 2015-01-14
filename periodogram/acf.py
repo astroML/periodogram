@@ -12,53 +12,96 @@ from scipy.ndimage.filters import gaussian_filter
 import logging
 
 import acor
+from astroML.time_series import ACF_scargle, ACF_EK
 
 from .findpeaks import peakdetect
 from .base import PeriodicModeler
-
-
 
 class ACF(PeriodicModeler):
     """
     Autocorrelation function for periodic modeling.
 
-    This can only deal with evenly sampled data.  Use ACFUneven
-    for implementation of Scargle (1989) ACF for uneven time sampling.
+    Requires evenly sampled data.  For non evenly sampled data,
+    use ACF_scargle or ACF_EK.
 
+    Parameters
+    ----------
+
+    maxlag : float, optional
+        Maximum period to search for.  If not provided, then will
+        default to 1/2 data span.
+
+    method : 'standard', 'scargle' or 'EK', optional
+        Method to use to calculate ACF.  If standard is chosen
+        then data must be evenly sampled.
+
+    smooth : int
+        Number of cadences over which to smooth output result.
+        Only implemented right now for 'standard' method.
     """
 
-    def __init__(self, maxlag=None, smooth=None):
+    def __init__(self, maxlag=None, method='standard',
+                 smooth=None,
+                 n_omega=2**10, omega_max=100, bins=20):
         self.maxlag = maxlag
         self.smooth = smooth
 
+        if method not in ['standard','scargle','EK']:
+            raise ValueError('Unrecognized method {}'.format(method))
+        self.method = method
+        
+        if self.method=='scargle':
+            self.n_omega = n_omega
+            self.omega_max = omega_max
+        elif self.method=='EK':
+            self.bins = bins
+                        
         self.power_fn = None
         
-    def fit(self, t, y, dy=None, filts=None):
+    def fit(self, t, y, dy=None):
         """Data must be evenly sampled.
         """
-        
-        #TODO: add real test to see if data is evenly sampled with no gaps
-        # for now, just assume it is 
-        
+
         self.t = np.atleast_1d(t)
         self.y = np.atleast_1d(y)
         self.dy = dy #ignored
 
+        #set default max lag to be 1/2 total span of observation, if not otherwise set
         if self.maxlag is None:
-            maxlag = len(self.y)
+            maxlag = (self.t[-1] - self.t[0])/2.
         else:
             maxlag = self.maxlag
         
-        self.cadence = np.median(self.t[1:] - self.t[:-1])
-        
-        self.ac = acor.function(self.y, maxlag)
-        if self.smooth is not None:
-            ac = gaussian_filter(ac, smooth)
-        
-        self.lag = np.arange(maxlag) * self.cadence
+        if self.method=='standard':
+            #TODO: add test to make sure data is evenly sampled
+            
+            self.cadence = np.median(self.t[1:] - self.t[:-1])
 
+            n_maxlag = int(maxlag/self.cadence)
+            self.ac = acor.function(self.y, n_maxlag)
+            self.lag = np.arange(n_maxlag) * self.cadence
+            
+        elif self.method=='scargle':
+            ac, lag = ACF_scargle(t, y, dy,
+                                  n_omega=self.n_omega, omega_max=self.omega_max)
+            ind = (lag >= 0) & (lag <= self.maxlag)
+            self.ac = ac[ind]
+            self.lag = lag[ind]
+            
+        elif self.method=='EK':
+            self.ac, self.ac_err, bins = ACF_EK(t, y, dy, bins=self.bins)           
+            self.lag = 0.5 * (bins[1:] + bins[:-1])
+            
+            
+        if self.smooth is not None:
+            if self.method != 'standard':
+                raise NotImplementedError('smooth kwarg not implemented for {} method'.format(self.method))
+            self.ac = gaussian_filter(self.ac, smooth)
+
+        
         self.power_fn = interpolate(self.lag, self.ac, s=0, k=1)
 
+        
         return self
         
     def score(self, period):
@@ -83,7 +126,6 @@ class ACF(PeriodicModeler):
 
         else:
             return peaks[0]
-        
         
 
 

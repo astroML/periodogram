@@ -18,11 +18,17 @@ def make_sine(N=1000, P=100, err=0.05, rseed=None):
     
     return t,y
 
-def test_single_sine(P=100):
+def test_single_sine_standard(P=100):
     t,y = make_sine(P=P)
     a = ACF()
     a.fit(t,y)
     pbest = a.period_search()
     assert_allclose(pbest, P, 0.01)
 
+#def test_single_sine_scargle(P=100):
+#    t,y = make_sine(P=P)
+#    a = ACF()
+#    a.fit(t,y)
+#    pbest = a.period_search()
+#    assert_allclose(pbest, P, 0.01)
 
