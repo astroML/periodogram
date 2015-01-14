@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy.interpolate import UnivariateSpline as interpolate
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage.filters import gaussian_filter, median_filter
 
 import logging
 
@@ -37,12 +37,15 @@ class ACF(PeriodicModeler):
 
     smooth : int
         Number of cadences over which to smooth output result.
-        Only implemented right now for 'standard' method.
+        Only implemented right now for 'standard', 'scargle' methods.
+        For 'standard' method, this will run a gaussian filter with
+        given width over the acf; for 'scargle' it will first median-smooth,
+        then gaussian-smooth.
     """
 
     def __init__(self, maxlag=None, method='standard',
                  smooth=None,
-                 n_omega=2**10, omega_max=100, bins=20):
+                 n_omega=2**12, omega_max=100, bins=20):
         self.maxlag = maxlag
         self.smooth = smooth
 
@@ -82,25 +85,41 @@ class ACF(PeriodicModeler):
             self.lag = np.arange(n_maxlag) * self.cadence
             
         elif self.method=='scargle':
+            if dy is None:
+                dy = 1
+
             ac, lag = ACF_scargle(t, y, dy,
-                                  n_omega=self.n_omega, omega_max=self.omega_max)
-            ind = (lag >= 0) & (lag <= self.maxlag)
+                                  n_omega=self.n_omega,
+                                  omega_max=self.omega_max)
+            #print(ac,lag)
+            ind = (lag >= 0) & (lag <= maxlag)
             self.ac = ac[ind]
             self.lag = lag[ind]
             
         elif self.method=='EK':
+            if dy is None:
+                dy = 1
             self.ac, self.ac_err, bins = ACF_EK(t, y, dy, bins=self.bins)           
             self.lag = 0.5 * (bins[1:] + bins[:-1])
             
             
         if self.smooth is not None:
-            if self.method != 'standard':
-                raise NotImplementedError('smooth kwarg not implemented for {} method'.format(self.method))
-            self.ac = gaussian_filter(self.ac, smooth)
+            if self.method == 'EK':
+                raise NotImplementedError('smooth kwarg not implemented for EK method')
+            if self.method=='standard':
+                self.ac = gaussian_filter(self.ac, self.smooth)
+            if self.method=='scargle':
+                #median smooth first, because you can get crazy spikes
+                self.ac = median_filter(self.ac, self.smooth)
+                #then gaussian-smooth too...(should this not be automatic?)
+                self.ac = gaussian_filter(self.ac, self.smooth)
+                
+            
 
-        
-        self.power_fn = interpolate(self.lag, self.ac, s=0, k=1)
-
+        try:
+            self.power_fn = interpolate(self.lag, self.ac, s=0, k=1)
+        except:
+            print('Error generating interpolation function: {}, {}'.format(self.lag, self.ac))
         
         return self
         
