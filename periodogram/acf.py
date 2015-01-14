@@ -35,17 +35,16 @@ class ACF(PeriodicModeler):
         Method to use to calculate ACF.  If standard is chosen
         then data must be evenly sampled.
 
-    smooth : int
-        Number of cadences over which to smooth output result.
-        Only implemented right now for 'standard', 'scargle' methods.
-        For 'standard' method, this will run a gaussian filter with
+    smooth : float
+        Timescale over which to smooth ACF. 
+        For 'standard' or 'EK' method, this will run a gaussian filter with
         given width over the acf; for 'scargle' it will first median-smooth,
         then gaussian-smooth.
     """
 
     def __init__(self, maxlag=None, method='standard',
                  smooth=None,
-                 n_omega=2**12, omega_max=100, bins=20):
+                 n_omega=2**12, omega_max=100, bins=None):
         self.maxlag = maxlag
         self.smooth = smooth
 
@@ -99,20 +98,34 @@ class ACF(PeriodicModeler):
         elif self.method=='EK':
             if dy is None:
                 dy = 1
-            self.ac, self.ac_err, bins = ACF_EK(t, y, dy, bins=self.bins)           
-            self.lag = 0.5 * (bins[1:] + bins[:-1])
+
+            if self.bins is None:
+                bins = np.linspace(0, maxlag, 500)
+            else:
+                bins = self.bins
+            ac, ac_err, bins = ACF_EK(t, y, dy, bins=bins)           
             
-            
+            lag = 0.5 * (bins[1:] + bins[:-1])
+            ind = (lag >=0) & (lag <= maxlag)
+            self.ac = ac[ind]
+            self.lag = lag[ind]
+            self.ac_err = ac_err[ind]
+                        
         if self.smooth is not None:
             if self.method == 'EK':
-                raise NotImplementedError('smooth kwarg not implemented for EK method')
+                dlag = self.lag[1]-self.lag[0] #assuming evenly spaced bins
+                kern_width = self.smooth//dlag
+                self.ac = gaussian_filter(self.ac, kern_width)
             if self.method=='standard':
-                self.ac = gaussian_filter(self.ac, self.smooth)
+                kern_width = self.smooth / self.cadence
+                self.ac = gaussian_filter(self.ac, kern_width)
             if self.method=='scargle':
-                #median smooth first, because you can get crazy spikes
-                self.ac = median_filter(self.ac, self.smooth)
-                #then gaussian-smooth too...(should this not be automatic?)
-                self.ac = gaussian_filter(self.ac, self.smooth)
+                #median smooth first, because you can get crazy spikes,
+                # then gaussian-smooth
+                dlag = self.lag[1]-self.lag[0] #assuming evenly spaced bins
+                kern_width = self.smooth//dlag 
+                self.ac = median_filter(self.ac, kern_width)
+                self.ac = gaussian_filter(self.ac, kern_width)
                 
             
 
