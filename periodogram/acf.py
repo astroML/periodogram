@@ -27,24 +27,32 @@ class ACF(PeriodicModeler):
     Parameters
     ----------
 
-    maxlag : float, optional
+    maxlag : float (optional)
         Maximum period to search for.  If not provided, then will
         default to 1/2 data span.
 
-    method : 'standard', 'scargle' or 'EK', optional
+    method : 'standard', 'scargle' or 'EK' (optional)
         Method to use to calculate ACF.  If standard is chosen
         then data must be evenly sampled.
 
-    smooth : float
+    smooth : float (optional)
         Timescale over which to smooth ACF. 
         For 'standard' or 'EK' method, this will run a gaussian filter with
         given width over the acf; for 'scargle' it will first median-smooth,
         then gaussian-smooth.
+
+    n_omega, omega_max : int, float (optional)
+        Passed to ``astroML.time_series.ACF_scargle``
+
+    bins : int or array_like (optional)
+        Passed to ``astroML.time_series.ACF_EK``; bins in which to calculate
+        ACF
     """
 
     def __init__(self, maxlag=None, method='standard',
                  smooth=None,
                  n_omega=2**12, omega_max=100, bins=None):
+        
         self.maxlag = maxlag
         self.smooth = smooth
 
