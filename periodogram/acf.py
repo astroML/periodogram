@@ -21,9 +21,6 @@ class ACF(PeriodicModeler):
     """
     Autocorrelation function for periodic modeling.
 
-    Requires evenly sampled data.  For non evenly sampled data,
-    use ACF_scargle or ACF_EK.
-
     Parameters
     ----------
 
@@ -45,13 +42,13 @@ class ACF(PeriodicModeler):
         Passed to ``astroML.time_series.ACF_scargle``
 
     bins : int or array_like (optional)
-        Passed to ``astroML.time_series.ACF_EK``; bins in which to calculate
+        Passed to ``astroML.time_series.ACF_EK``; time bins in which to calculate
         ACF
     """
 
     def __init__(self, maxlag=None, method='standard',
                  smooth=None,
-                 n_omega=2**12, omega_max=100, bins=None):
+                 n_omega=2**12, omega_max=20, bins=None):
         
         self.maxlag = maxlag
         self.smooth = smooth
