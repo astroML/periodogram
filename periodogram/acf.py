@@ -106,6 +106,8 @@ class ACF(PeriodicModeler):
 
             if self.bins is None:
                 bins = np.linspace(0, maxlag, 500)
+            elif type(self.bins) is int:
+                bins = np.linspace(0,maxlag,self.bins)
             else:
                 bins = self.bins
             ac, ac_err, bins = ACF_EK(t, y, dy, bins=bins)           
