@@ -26,7 +26,6 @@ class PeriodicModeler(object):
                       return_scores=False, linspace=False):
         """Find the best period for the model"""
         # TODO: implement using the score() function provided by subclasses
-
         if linspace:
             periods = np.linspace(pmin, pmax, resolution)
         else:
@@ -50,3 +49,12 @@ class PeriodicModeler(object):
             return pks, hts
         else:
             return pks
+
+class AperiodicModeler(object):
+    """Base class for periodic modeling"""
+    def __init__(self, *args, **kwargs):
+        raise NotImplementedError("AperiodicModeler")
+
+    def fit(self, t, y, dy=None, filts=None):
+        """Provide data for the fit"""
+        raise NotImplementedError()
